@@ -1,0 +1,1705 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GrooveRunner</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'PingFang TC', 'Heiti TC', sans-serif;
+            background: repeating-linear-gradient(45deg, #0f0f0f, #0f0f0f 8px, #1a1a1a 8px, #1a1a1a 9px);
+            min-height: 100vh;
+            color: #e5e5e5;
+            padding: 16px;
+        }
+        .container { max-width: 1400px; margin: 0 auto; }
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.5); z-index: 999; }
+        .modal-overlay.active { display: flex; align-items: center; justify-content: center; }
+
+        .header { display: flex; align-items: center; gap: 12px; margin-bottom: 32px; padding-bottom: 20px; border-bottom: 1px solid #333; }
+        .header h1 { font-size: 36px; font-weight: 700; color: #ffffff; }
+        .header-subtitle { margin-left: auto; font-size: 12px; color: #888; }
+        .modal { display: none !important; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.7); backdrop-filter: blur(5px); align-items: center; justify-content: center; }
+        .modal.active { display: flex !important; }
+        .modal-content { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 12px; padding: 28px; max-width: 500px; width: 90%; max-height: 90vh; overflow-y: auto; position: relative; }
+        .modal-close { position: absolute; top: 16px; right: 16px; background: none; border: none; color: #888; font-size: 24px; cursor: pointer; padding: 0; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; }
+        .modal-close:hover { color: #ec4899; }
+        .modal-title { font-size: 18px; font-weight: 700; color: #ffffff; margin-bottom: 24px; }
+        .token-section { display: block; }
+        .token-row { display: grid; grid-template-columns: 1fr; gap: 24px; }
+        .token-item { display: flex; flex-direction: column; gap: 12px; height: 100%; }
+        .token-status { font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+        .token-status.saved { color: #86efac; }
+        .token-status.unsaved { color: #fca5a5; }
+        .token-status-indicator { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+        .token-helper { font-size: 11px; color: #666; }
+        .token-helper a { color: #ec4899; text-decoration: none; }
+        .token-button { padding: 8px 16px; background: #ec4899; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; transition: all 0.3s ease; }
+        .token-button:hover { background: #db2777; }
+        .token-input-group { display: none; gap: 6px; }
+        .token-input-group.active { display: flex !important; }
+        .token-input-group input, .token-input-group button { padding: 8px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; border: none; }
+        .token-input-group input { flex: 1; background: #2a2a2a; border: 1px solid #3a3a3a; color: #e5e5e5; }
+        .token-input-group input:focus { outline: none; border-color: #ec4899; background: #333; }
+        .token-input-group button { background: #ec4899; color: white; cursor: pointer; }
+        .token-input-group button:hover { background: #db2777; }
+        .provider-section { margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid #2a2a2a; }
+        .provider-label { font-size: 13px; font-weight: 600; color: #ccc; margin-bottom: 4px; }
+        .provider-sublabel { font-size: 11px; color: #666; margin-bottom: 10px; }
+        .provider-switch { display: inline-flex; background: rgba(255,255,255,0.06); border-radius: 8px; padding: 4px; gap: 4px; }
+        .provider-option { padding: 8px 22px; border: none; border-radius: 6px; background: transparent; color: #888; cursor: pointer; font-size: 13px; font-weight: 600; transition: all 0.2s ease; }
+        .provider-option:hover { color: #ccc; }
+        .provider-option.active { background: #ec4899; color: white; }
+        .help-section { margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid #2a2a2a; }
+        .help-section-title { font-size: 13px; font-weight: 600; color: #e5e5e5; margin-bottom: 10px; }
+        .help-content { font-size: 12px; color: #999; line-height: 1.6; }
+        .help-step { margin-bottom: 8px; padding: 8px; background: rgba(236, 72, 153, 0.08); border-left: 3px solid #ec4899; border-radius: 4px; }
+        .help-step strong { color: #ccc; }
+        .help-item { margin-bottom: 8px; }
+        .help-item strong { color: #ccc; }
+        .help-item a { color: #ec4899; text-decoration: none; }
+        .help-item a:hover { text-decoration: underline; }
+        .help-qa { margin-bottom: 12px; }
+        .help-qa-q { color: #ccc; margin-bottom: 4px; }
+        .help-qa-a { color: #999; padding-left: 12px; border-left: 2px solid #3a3a3a; }
+        @media (max-width: 1024px) { .main-grid { grid-template-columns: 1fr; } }
+        .main-grid { display: grid; grid-template-columns: 1fr 1.2fr; gap: 32px; }
+        .scan-card { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 12px; padding: 28px; height: fit-content; position: sticky; top: 20px; }
+        .form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+        .form-group label { font-size: 12px; font-weight: 600; color: #999; text-transform: uppercase; letter-spacing: 0.5px; }
+        .form-group input { padding: 10px 14px; background: #2a2a2a; border: 1px solid #3a3a3a; border-radius: 8px; color: #e5e5e5; font-size: 14px; }
+        .form-group input:focus { outline: none; border-color: #ec4899; background: #333; }
+        .button-group { display: flex; gap: 8px; margin-bottom: 16px; }
+        .submit-button, .clear-button { padding: 12px 16px; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 14px; transition: all 0.3s ease; }
+        .submit-button { flex: 1; background: #ec4899; }
+        .submit-button:hover { background: #db2777; }
+        .clear-button { flex: 0.3; background: #555; }
+        .clear-button:hover { background: #666; }
+        .error-message { background: #3a1a1a; border: 1px solid #663333; border-radius: 8px; padding: 12px; color: #fca5a5; font-size: 13px; margin-top: 12px; display: none; border-left: 4px solid #dc2626; }
+        .error-message.active { display: block; }
+        .result-card { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 12px; padding: 28px; }
+        .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 400px; text-align: center; color: #666; }
+        .empty-state-icon { font-size: 56px; opacity: 0.4; margin-bottom: 16px; }
+        .versions-panel { display: none; }
+        .versions-panel.active { display: block; margin-bottom: 24px; }
+        .version-card { background: #2a2a2a; border: 1px solid #3a3a3a; border-radius: 8px; padding: 16px; cursor: pointer; transition: all 0.3s ease; margin-bottom: 12px; }
+        .version-card:hover { background: #333; border-color: #ec4899; }
+        .version-name { font-weight: 600; margin-bottom: 6px; color: #ec4899; }
+        .version-info { font-size: 12px; color: #888; line-height: 1.4; }
+        .version-back-button { padding: 10px 16px; background: #2a2a2a; color: #ccc; border: 1px solid #3a3a3a; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; margin-bottom: 24px; }
+        .version-back-button:hover { background: #333; }
+        .result-container { display: none; }
+        .result-container.active { display: block; }
+        .album-cover { width: 100%; border-radius: 10px; margin-bottom: 20px; aspect-ratio: 1; object-fit: cover; }
+        .album-header { margin-bottom: 20px; border-bottom: 1px solid #2a2a2a; padding-bottom: 16px; }
+        .album-title { font-size: 22px; font-weight: 700; margin-bottom: 6px; color: #ffffff; }
+        .album-artist { color: #ec4899; font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .title-box-wrapper { display: flex; flex-direction: column; gap: 0; margin-bottom: 16px; }
+        .title-box { flex: 1; background: #2a2a2a; border: 1px solid #3a3a3a; border-radius: 8px; padding: 14px; }
+        .title-label { font-size: 14px; color: #888; text-transform: uppercase; margin-bottom: 6px; font-weight: 600; }
+        .title-textarea { width: 100%; min-height: 60px; background: #1a1a1a; border: 1px solid #3a3a3a; border-radius: 6px; color: #e5e5e5; padding: 10px; font-size: 14px; font-family: inherit; resize: vertical; }
+        .title-textarea:focus { outline: none; border-color: #ec4899; background: #222; }
+        .title-counter { font-size: 11px; color: #666; margin-top: 4px; text-align: right; }
+        .title-counter.warning { color: #fca5a5; }
+        .title-counter.over-limit { color: #ef4444; font-weight: 600; }
+        .copy-button { padding: 10px 16px; background: #ec4899; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; transition: all 0.3s ease; align-self: flex-end; margin-top: 28px; }
+        .copy-button:hover { background: #db2777; }
+        .copy-button.copied { background: #10b981; }
+        .keywords-section { margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid #2a2a2a; }
+        .keywords-section.hidden { display: none; }
+        .keywords-title { font-size: 14px; font-weight: 700; margin-bottom: 12px; color: #ccc; }
+        .keywords-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; }
+        .keyword-button { padding: 8px 12px; background: #2a2a2a; border: 1px solid #3a3a3a; border-radius: 6px; color: #ccc; cursor: pointer; font-size: 11px; line-height: 1.3; transition: all 0.2s ease; text-align: center; word-break: break-word; }
+        .keyword-button:hover { background: #ec4899; border-color: #ec4899; color: white; }
+        .info-section { margin-top: 24px; padding-top: 20px; border-top: 1px solid #2a2a2a; }
+        .info-section.hidden { display: none; }
+        .info-block { margin-bottom: 12px; padding: 10px; background: #2a2a2a; border-left: 3px solid #ec4899; border-radius: 4px; }
+        .info-block-title { font-size: 11px; font-weight: 700; color: #ec4899; margin-bottom: 6px; text-transform: uppercase; }
+        .info-block-content { font-size: 12px; color: #d1d5db; line-height: 1.5; word-break: break-word; }
+        .loading-indicator { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 20px; margin-bottom: 20px; }
+        .loading-indicator.hidden { display: none; }
+        .loading-bar { width: 100px; height: 4px; background: #2a2a2a; border-radius: 2px; overflow: hidden; margin-bottom: 12px; }
+        .loading-bar-inner { height: 100%; background: linear-gradient(90deg, #ec4899, #a855f7, #ec4899); background-size: 200% 100%; animation: loading-bar-animation 1.5s ease-in-out infinite; }
+        @keyframes loading-bar-animation { 0% { background-position: 0% 0%; } 50% { background-position: 100% 0%; } 100% { background-position: 0% 0%; } }
+        .loading-text { font-size: 14px; color: #888; font-weight: 600; }
+        .product-desc-section { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 12px; padding: 20px; margin-top: 24px; }
+        .product-desc-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #2a2a2a; }
+        .product-desc-title { font-size: 14px; font-weight: 700; color: #ffffff; }
+        .product-desc-controls { display: flex; gap: 8px; }
+        .product-desc-button { padding: 6px 12px; background: #2a2a2a; border: 1px solid #3a3a3a; border-radius: 6px; color: #ccc; cursor: pointer; font-size: 11px; font-weight: 600; transition: all 0.2s ease; }
+        .product-desc-button:hover { background: #ec4899; border-color: #ec4899; color: white; }
+        .quick-text-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 8px; margin-bottom: 16px; }
+        .quick-text-button { padding: 8px 10px; background: #2a2a2a; border: 1px solid #3a3a3a; border-radius: 6px; color: #ccc; cursor: pointer; font-size: 11px; line-height: 1.3; transition: all 0.2s ease; text-align: center; word-break: break-word; }
+        .quick-text-button:hover { background: #ec4899; border-color: #ec4899; color: white; }
+        .product-desc-textarea { width: 100%; min-height: 250px; background: #2a2a2a; border: 1px solid #3a3a3a; border-radius: 6px; color: #e5e5e5; padding: 12px; font-size: 13px; font-family: inherit; resize: vertical; margin-bottom: 12px; }
+        .product-desc-textarea:focus { outline: none; border-color: #ec4899; background: #333; }
+        .product-desc-footer { display: flex; justify-content: space-between; align-items: center; }
+        .product-desc-counter { font-size: 11px; color: #666; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 style="font-family: 'Cinzel Decorative', serif; font-weight: 700;">GrooveRunner</h1>
+            <div style="margin-left: auto; display: flex; flex-direction: column; align-items: flex-end; gap: 8px;">
+                <div style="display: flex; gap: 8px;">
+                    <button class="token-button" onclick="openHelpModal()" style="font-size: 14px;">📖 使用說明</button>
+                    <button class="token-button" onclick="openSettingsModal()" style="font-size: 14px;">⚙️ 引擎設定</button>
+                </div>
+                <div style="font-size: 11px; color: #666;">Discogs / Gemini / Claude / 鳳姐嚴選二手唱片</div>
+            </div>
+        </div>
+
+        <div id="settingsModal" class="modal">
+            <div class="modal-content">
+                <button class="modal-close" onclick="closeSettingsModal()">✕</button>
+                <div class="modal-title">⚙️ 設置</div>
+
+
+                <div class="token-section">
+                    <div class="token-row">
+                        <div class="token-item">
+                            <div>
+                                <div class="token-status unsaved" id="discogsStatus">
+                                    <span class="token-status-indicator"></span>
+                                    <span>Discogs Token</span>
+                                </div>
+                                <div class="token-helper">取得：<a href="https://www.discogs.com/settings/developers" target="_blank">Discogs 開發者</a></div>
+                            </div>
+                            <button class="token-button" onclick="toggleTokenInput('discogs')">設置</button>
+                            <div id="discogsInputGroup" class="token-input-group">
+                                <input id="discogsInput" type="password" placeholder="Discogs API Token">
+                                <button onclick="saveToken('discogs')">儲存</button>
+                            </div>
+                        </div>
+
+                        <div class="token-item" id="openrouterTokenItem">
+                            <div>
+                                <div class="token-status unsaved" id="openrouterStatus">
+                                    <span class="token-status-indicator"></span>
+                                    <span>OpenRouter API Key</span>
+                                </div>
+                                <div class="token-helper">取得：<a href="https://openrouter.ai/keys" target="_blank">OpenRouter Keys</a></div>
+                            </div>
+                            <button class="token-button" onclick="toggleTokenInput('openrouter')">設置</button>
+                            <div id="openrouterInputGroup" class="token-input-group">
+                                <input id="openrouterInput" type="password" placeholder="OpenRouter API Key">
+                                <button onclick="saveToken('openrouter')">儲存</button>
+                            </div>
+                        </div>
+
+                        <div class="token-item">
+                            <div>
+                                <div class="token-status unsaved" id="storeStatus">
+                                    <span class="token-status-indicator"></span>
+                                    <span>店家名稱</span>
+                                </div>
+                                <div class="token-helper">用於標題前綴</div>
+                            </div>
+                            <button class="token-button" onclick="toggleTokenInput('store')">設置</button>
+                            <div id="storeInputGroup" class="token-input-group">
+                                <input id="storeInput" type="text" placeholder="例如：Yahoo拍賣">
+                                <button onclick="saveToken('store')">儲存</button>
+                            </div>
+                        </div>
+
+                        <div class="token-item">
+                            <div>
+                                <div class="token-status unsaved" id="storeShortStatus">
+                                    <span class="token-status-indicator"></span>
+                                    <span>店家名稱縮寫（可選）</span>
+                                </div>
+                                <div class="token-helper">標題超過55字時使用此縮寫，例如：鳳姐 或 FJ</div>
+                            </div>
+                            <button class="token-button" onclick="toggleTokenInput('storeShort')">設置</button>
+                            <div id="storeShortInputGroup" class="token-input-group">
+                                <input id="storeShortInput" type="text" placeholder="例如：鳳姐 或 FJ">
+                                <button onclick="saveToken('storeShort')">儲存</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="quickButtonModal" class="modal">
+            <div class="modal-content">
+                <button class="modal-close" onclick="closeQuickButtonModal()">✕</button>
+                <div class="modal-title">⚡ 快速按鈕管理</div>
+                
+                <div style="margin-bottom: 16px;">
+                    <label style="font-size: 12px; color: #888; display: block; margin-bottom: 6px;">新增按鈕文本：</label>
+                    <div style="display: flex; gap: 6px;">
+                        <input id="newButtonText" type="text" placeholder="例如：9成新" style="flex: 1; padding: 8px 12px; background: #2a2a2a; border: 1px solid #3a3a3a; border-radius: 6px; color: #e5e5e5; font-size: 13px;">
+                        <button onclick="addCustomButton()" class="token-button">➕ 新增</button>
+                    </div>
+                </div>
+
+                <div id="customButtonsList" style="max-height: 400px; overflow-y: auto; border: 1px solid #2a2a2a; border-radius: 6px; padding: 12px;">
+                    <!-- 自定義按鈕列表會動態插入這裡 -->
+                </div>
+            </div>
+        </div>
+
+        <div id="helpModal" class="modal">
+            <div class="modal-content">
+                <button class="modal-close" onclick="closeHelpModal()">✕</button>
+                <div class="modal-title">📖 使用說明</div>
+                
+                <div class="help-section">
+                    <div class="help-section-title">🚀 快速開始</div>
+                    <div class="help-content">
+                        <div class="help-step"><strong>1. 設置 API</strong><br/>點「⚙️ 引擎設定」，填入 Discogs Token 和 OpenRouter API Key（Qwen3.6-Plus 免費，Haiku 用 OpenRouter 當備援）</div>
+                        <div class="help-step"><strong>2. 掃描條碼</strong><br/>輸入條碼或 Catalog Number，按「搜尋」</div>
+                        <div class="help-step"><strong>3. 提取關鍵字</strong><br/>AI 自動生成關鍵字按鈕，點擊加入標題</div>
+                    </div>
+                </div>
+
+                <div class="help-section">
+                    <div class="help-section-title">📌 功能介紹</div>
+                    <div class="help-content">
+                        <div class="help-item"><strong>條碼搜尋：</strong>支援 UPC/EAN/Catalog Number，台灣優先</div>
+                        <div class="help-item"><strong>AI 關鍵字：</strong>自動提取藝人、專輯、廠牌等重要資訊（中英文雙語）</div>
+                        <div class="help-item"><strong>快速按鈕：</strong>自訂常用詞彙（如「9成新」「二手」）一鍵加入</div>
+                        <div class="help-item"><strong>即時編輯：</strong>標題可直接修改，計數提醒字數</div>
+                    </div>
+                </div>
+
+                <div class="help-section">
+                    <div class="help-section-title">⚙️ 怎麼設置</div>
+                    <div class="help-content">
+                        <div class="help-item"><strong>Discogs Token：</strong><a href="https://www.discogs.com/settings/developers" target="_blank">申請連結</a>，用來搜尋唱片資訊</div>
+                        <div class="help-item"><strong>OpenRouter API Key：</strong><a href="https://openrouter.ai/keys" target="_blank">OpenRouter Keys</a>，用於 Qwen3.6-Plus (Free) 主引擎和 Claude Haiku 備援</div>
+                        <div class="help-item"><strong>主要引擎：</strong>Qwen3.6-Plus (Free) 為主要引擎，Claude Haiku 為備援。一個失敗會自動切另一個</div>
+                        <div class="help-item"><strong>自訂按鈕：</strong>點「⚡快速按鈕管理」新增、編輯、排序常用詞彙</div>
+                    </div>
+                </div>
+
+                <div class="help-section">
+                    <div class="help-section-title">💰 費用說明</div>
+                    <div class="help-content">
+                        <div class="help-item"><strong>Qwen3.6-Plus (Free)：</strong>完全免費，無限使用</div>
+                        <div class="help-item"><strong>Claude Haiku (OpenRouter)：</strong>約 $0.0025 / 次查詢（台幣 0.08 元），僅當備援時才付費</div>
+                        <div class="help-item"><strong>日常成本：</strong>100 次查詢 ≈ $0.25；1000 次 ≈ $2.5</div>
+                        <div class="help-item"><strong>建議：</strong>主要用 Qwen3.6-Plus (Free) 免費額度，當備援用 Claude Haiku</div>
+                    </div>
+                </div>
+
+                <div class="help-section">
+                    <div class="help-section-title">❓ 常見問題</div>
+                    <div class="help-content">
+                        <div class="help-qa">
+                            <div class="help-qa-q"><strong>Q: 為什麼需要 OpenRouter Key？</strong></div>
+                            <div class="help-qa-a">A: Qwen3.6-Plus (Free) 和 Claude Haiku 備援都需要通過 OpenRouter 調用。Qwen 完全免費，Haiku 只在主引擎失敗時才計費。</div>
+                        </div>
+                        <div class="help-qa">
+                            <div class="help-qa-q"><strong>Q: 自訂按鈕什麼時候生效？</strong></div>
+                            <div class="help-qa-a">A: 立即生效。在「⚡快速按鈕管理」中編輯，關閉 modal 時就會更新下方按鈕。</div>
+                        </div>
+                        <div class="help-qa">
+                            <div class="help-qa-q"><strong>Q: 為什麼找不到條碼？</strong></div>
+                            <div class="help-qa-a">A: Discogs 資料庫不完整，試試 Catalog Number 或換個搜尋詞。台灣優先搜尋。</div>
+                        </div>
+                        <div class="help-qa">
+                            <div class="help-qa-q"><strong>Q: 查詢要多久？</strong></div>
+                            <div class="help-qa-a">A: 通常 2-5 秒，如果超過 5 秒會自動切備援引擎。網路不穩可能會慢。</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="main-grid">
+            <div class="scan-card">
+                <div class="form-group">
+                    <label>輸入條碼(支援掃碼裝置)</label>
+                    <input id="barcodeInput" type="text" placeholder="例如: 5099950304029" onkeypress="if(event.key==='Enter') searchByBarcode()" autocomplete="off">
+                </div>
+                <div class="button-group">
+                    <button class="submit-button" onclick="searchByBarcode()">搜尋</button>
+                    <button class="clear-button" onclick="clearBarcode()">清空</button>
+                </div>
+
+                <div class="form-group">
+                    <label>或輸入 Catalog Number</label>
+                    <input id="catalogInput" type="text" placeholder="例如:EK 45400" onkeypress="if(event.key==='Enter') searchByCatalog()" autocomplete="off">
+                </div>
+                <div class="button-group">
+                    <button class="submit-button" onclick="searchByCatalog()">搜尋</button>
+                    <button class="clear-button" onclick="document.getElementById('catalogInput').value=''">清空</button>
+                </div>
+
+                <div class="form-group">
+                    <label>Matrix/Runout Code（非必填）</label>
+                    <input id="matrixInput" type="text" placeholder="用於精確識別版本" autocomplete="off">
+                </div>
+
+                <div id="errorMessage" class="error-message"></div>
+
+                <div class="product-desc-section">
+                    <div class="product-desc-header">
+                        <div class="product-desc-title">商品內文編輯</div>
+                        <div class="product-desc-controls">
+                            <button class="product-desc-button" onclick="addQuickText()">➕ 新增</button>
+                            <button class="product-desc-button" onclick="editQuickText()">✏️ 編輯</button>
+                            <button class="product-desc-button" onclick="deleteQuickText()">🗑️ 刪除</button>
+                        </div>
+                    </div>
+
+                    <div id="quickTextGrid" class="quick-text-grid"></div>
+
+                    <div id="listingInfoBox" style="display:none; margin-bottom:12px; padding:12px; background:rgba(245,158,11,0.08); border-left:4px solid #f59e0b; border-radius:6px;"></div>
+
+                    <textarea id="productDescInput" class="product-desc-textarea" placeholder="在這裡編輯商品內文..."></textarea>
+                    
+                    <div class="product-desc-footer">
+                        <div class="product-desc-counter"><span id="descCharCount">0</span> 字</div>
+                        <button class="copy-button" onclick="copyProductDesc()">複製</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="result-card">
+                <div id="emptyState" class="empty-state">
+                    <div class="empty-state-icon">🎵</div>
+                    <p>輸入條碼以開始</p>
+                </div>
+
+                <div id="versionsPanel" class="versions-panel">
+                    <button class="version-back-button" onclick="backToVersions()">← 返回搜尋</button>
+                    <div id="versionsList"></div>
+                </div>
+
+                <div id="resultContainer" class="result-container">
+                    <button class="version-back-button" onclick="backToVersions()" id="backBtn" style="display: none;">← 選擇其他版本</button>
+                    <img id="albumCover" class="album-cover" alt="專輯封面">
+                    
+                    <div class="album-header">
+                        <div class="album-title" id="albumTitle"></div>
+                        <div class="album-artist" id="albumArtist"></div>
+                    </div>
+
+                    <div id="yahooRecommendBox" style="display: none; margin-bottom: 16px;">
+                        <div style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: #ccc;">
+                            <span id="yahooRecommendPath" style="flex: 1;">📂 Yahoo 拍賣分類推薦：</span>
+                            <button onclick="copyYahooPath()" style="padding: 4px 10px; background: #22c55e; border: none; border-radius: 4px; color: white; font-size: 11px; cursor: pointer; font-weight: 600; white-space: nowrap; flex-shrink: 0;">複製路徑</button>
+                        </div>
+                    </div>
+
+                    <div class="title-box-wrapper">
+                        <div id="aiTitleBox" class="ai-title-box" style="display: none; margin-bottom: 8px; padding: 12px; background: rgba(236, 72, 153, 0.08); border-left: 3px solid #ec4899; border-radius: 6px;">
+                            <div style="font-size: 11px; color: #888; margin-bottom: 6px;">🤖 AI 參考標題（55字以內，含店家前綴）</div>
+                            <div style="display: flex; gap: 8px; align-items: flex-start;">
+                                <div id="aiTitleText" style="flex: 1; font-size: 13px; color: #e5e5e5; line-height: 1.5; word-break: break-all;"></div>
+                                <button onclick="useAiTitle()" class="token-button" style="font-size: 12px; white-space: nowrap;">使用</button>
+                            </div>
+                        </div>
+                        <div class="title-box">
+                            <div class="title-label">📝 商品標題（60字以內）</div>
+                            <textarea id="titleInput" class="title-textarea" placeholder="點擊下方關鍵字或手動輸入..."></textarea>
+                            <div class="title-counter"><span id="charCount">0</span>/60</div>
+                        </div>
+                        <button class="copy-button" onclick="copyTitle()">複製</button>
+                    </div>
+
+                    <div id="keywordsSection" class="keywords-section hidden">
+                        <div class="keywords-title">📌 關鍵字（點擊加入標題）</div>
+                        <div id="keywordsGrid" class="keywords-grid"></div>
+                        <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #2a2a2a; text-align: center;">
+                            <button class="keyword-button" onclick="openQuickButtonModal()" style="background: #1a1a1a; border: 1px dashed #3a3a3a; width: 100%; cursor: pointer;">⚡ 快速按鈕管理</button>
+                        </div>
+                    </div>
+
+                    <div id="infoSection" class="info-section hidden">
+                        <div id="loadingIndicator" class="loading-indicator hidden">
+                            <div class="loading-bar">
+                                <div class="loading-bar-inner"></div>
+                            </div>
+                            <div class="loading-text">I'm loading.....</div>
+                        </div>
+                        <div id="infoContent"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const DISCOGS_API = 'https://api.discogs.com';
+        let discogsToken = localStorage.getItem('discogsToken') || '';
+        let openrouterKey = localStorage.getItem('openrouterKey') || '';
+        let storeName = localStorage.getItem('storeName') || '';
+        let storeNameShort = localStorage.getItem('storeNameShort') || '';
+        let customKeywordButtons = JSON.parse(localStorage.getItem('customKeywordButtons') || '[]');
+        let allVersions = [];
+        let quickTexts = JSON.parse(localStorage.getItem('quickTexts') || '[]');
+        let yahooCategories = {};
+        let currentYahooCategoryId = '';
+        let currentYahooCategoryPath = '';
+        let currentAiProvider = 'claude';  // 追踪当前是哪个引擎在提供服务
+
+        window.addEventListener('DOMContentLoaded', () => {
+            if (discogsToken) updateTokenStatus('discogs');
+            if (openrouterKey) updateTokenStatus('openrouter');
+            if (storeName) updateTokenStatus('store');
+            if (storeNameShort) updateTokenStatus('storeShort');
+            displayQuickTexts();
+            loadYahooCategories();
+            
+            document.getElementById('titleInput').addEventListener('input', (e) => {
+                updateTitleCounter();
+            });
+
+            document.getElementById('productDescInput').addEventListener('input', (e) => {
+                document.getElementById('descCharCount').textContent = e.target.value.length;
+            });
+
+            const modal = document.getElementById('settingsModal');
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) closeSettingsModal();
+            });
+
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') closeSettingsModal();
+            });
+
+            const quickBtnModal = document.getElementById('quickButtonModal');
+            quickBtnModal.addEventListener('click', (e) => {
+                if (e.target === quickBtnModal) closeQuickButtonModal();
+            });
+
+            const helpModal = document.getElementById('helpModal');
+            helpModal.addEventListener('click', (e) => {
+                if (e.target === helpModal) closeHelpModal();
+            });
+
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    closeQuickButtonModal();
+                    closeHelpModal();
+                    closeSettingsModal();
+                }
+            });
+        });
+
+        function openSettingsModal() {
+            document.getElementById('settingsModal').classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeSettingsModal() {
+            document.getElementById('settingsModal').classList.remove('active');
+            document.body.style.overflow = 'auto';
+        }
+
+        function openHelpModal() {
+            document.getElementById('helpModal').classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeHelpModal() {
+            document.getElementById('helpModal').classList.remove('active');
+            document.body.style.overflow = 'auto';
+        }
+
+        function toggleTokenInput(type) {
+            const group = document.getElementById(type + 'InputGroup');
+            group.classList.toggle('active');
+        }
+
+        function saveToken(type) {
+            const input = document.getElementById(type + 'Input').value.trim();
+            if (input) {
+                if (type === 'discogs') { discogsToken = input; localStorage.setItem('discogsToken', input); }
+                else if (type === 'openrouter') { openrouterKey = input; localStorage.setItem('openrouterKey', input); }
+                else if (type === 'store') { storeName = input; localStorage.setItem('storeName', input); }
+                else if (type === 'storeShort') { storeNameShort = input; localStorage.setItem('storeNameShort', input); }
+                document.getElementById(type + 'InputGroup').classList.remove('active');
+                updateTokenStatus(type);
+                alert('✅ 已儲存！');
+            } else {
+                alert('❌ 內容不能為空！');
+            }
+        }
+
+        function updateTokenStatus(type) {
+            const statusEl = document.getElementById(type + 'Status');
+            let token = type === 'discogs' ? discogsToken : type === 'openrouter' ? openrouterKey : type === 'store' ? storeName : storeNameShort;
+            let label = type === 'discogs' ? 'Discogs Token' : type === 'openrouter' ? 'OpenRouter API Key' : type === 'store' ? '店家名稱' : '店家名稱縮寫';
+            
+            if (token) {
+                statusEl.className = 'token-status saved';
+                statusEl.innerHTML = '<span class="token-status-indicator"></span><span>••••••••••• ✓</span>';
+            } else {
+                statusEl.className = 'token-status unsaved';
+                statusEl.innerHTML = '<span class="token-status-indicator"></span><span>' + label + '</span>';
+            }
+        }
+
+        function clearBarcode() {
+            document.getElementById('barcodeInput').value = '';
+            document.getElementById('barcodeInput').focus();
+        }
+
+        function displayQuickTexts() {
+            const grid = document.getElementById('quickTextGrid');
+            grid.innerHTML = '';
+            quickTexts.forEach((qt) => {
+                const btn = document.createElement('button');
+                btn.className = 'quick-text-button';
+                btn.textContent = qt.label;
+                btn.onclick = () => insertQuickText(qt.text);
+                grid.appendChild(btn);
+            });
+        }
+
+        function addQuickText() {
+            const label = prompt('輸入按鈕標籤：');
+            if (!label) return;
+            const text = prompt('輸入要插入的文本：');
+            if (!text) return;
+            quickTexts.push({ label, text });
+            localStorage.setItem('quickTexts', JSON.stringify(quickTexts));
+            displayQuickTexts();
+        }
+
+        function editQuickText() {
+            if (quickTexts.length === 0) { alert('還沒有快速文本'); return; }
+            
+            let html = '<div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;">';
+            quickTexts.forEach((qt, idx) => {
+                html += '<button onclick="editItem(' + idx + ')" style="padding: 12px; background: #2a2a2a; border: 1px solid #3a3a3a; border-radius: 6px; color: #ccc; cursor: pointer; font-size: 12px; word-break: break-word;">' + qt.label + '</button>';
+            });
+            html += '</div>';
+            
+            const modal = document.createElement('div');
+            modal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 2000;';
+            modal.innerHTML = '<div style="background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 12px; padding: 28px; max-width: 600px; width: 90%; position: relative;">' +
+                '<button onclick="this.parentElement.parentElement.remove()" style="position: absolute; top: 16px; right: 16px; background: none; border: none; color: #888; font-size: 24px; cursor: pointer;">✕</button>' +
+                '<div style="font-size: 18px; font-weight: 700; margin-bottom: 20px;">選擇要編輯的項目</div>' +
+                html +
+                '</div>';
+            modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+            document.body.appendChild(modal);
+        }
+
+        function editItem(idx) {
+            const newLabel = prompt('新的按鈕標籤：', quickTexts[idx].label);
+            if (!newLabel) return;
+            const newText = prompt('新的文本內容：', quickTexts[idx].text);
+            if (!newText) return;
+            quickTexts[idx] = { label: newLabel, text: newText };
+            localStorage.setItem('quickTexts', JSON.stringify(quickTexts));
+            displayQuickTexts();
+            document.querySelectorAll('[style*="position: fixed"]').forEach(el => el.remove());
+            alert('✅ 已編輯！');
+        }
+
+        function deleteQuickText() {
+            if (quickTexts.length === 0) { alert('還沒有快速文本'); return; }
+            
+            let html = '<div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;">';
+            quickTexts.forEach((qt, idx) => {
+                html += '<button onclick="deleteItem(' + idx + ')" style="padding: 12px; background: #2a2a2a; border: 1px solid #3a3a3a; border-radius: 6px; color: #ccc; cursor: pointer; font-size: 12px; word-break: break-word;">' + qt.label + '</button>';
+            });
+            html += '</div>';
+            
+            const modal = document.createElement('div');
+            modal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 2000;';
+            modal.innerHTML = '<div style="background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 12px; padding: 28px; max-width: 600px; width: 90%; position: relative;">' +
+                '<button onclick="this.parentElement.parentElement.remove()" style="position: absolute; top: 16px; right: 16px; background: none; border: none; color: #888; font-size: 24px; cursor: pointer;">✕</button>' +
+                '<div style="font-size: 18px; font-weight: 700; margin-bottom: 20px;">選擇要刪除的項目</div>' +
+                html +
+                '</div>';
+            modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+            document.body.appendChild(modal);
+        }
+
+        function deleteItem(idx) {
+            if (confirm('確定要刪除「' + quickTexts[idx].label + '」嗎？')) {
+                quickTexts.splice(idx, 1);
+                localStorage.setItem('quickTexts', JSON.stringify(quickTexts));
+                displayQuickTexts();
+                document.querySelectorAll('[style*="position: fixed"]').forEach(el => el.remove());
+                alert('✅ 已刪除！');
+            }
+        }
+
+        function insertQuickText(text) {
+            const descInput = document.getElementById('productDescInput');
+            const currentText = descInput.value;
+            const cursorPos = descInput.selectionStart || 0;
+            const beforeCursor = currentText.substring(0, cursorPos);
+            const afterCursor = currentText.substring(cursorPos);
+            const newText = beforeCursor + text + afterCursor;
+            descInput.value = newText;
+            document.getElementById('descCharCount').textContent = newText.length;
+            descInput.focus();
+        }
+
+        function copyProductDesc() {
+            const descText = document.getElementById('productDescInput').value;
+            if (!descText) { alert('內文為空！'); return; }
+            navigator.clipboard.writeText(descText).then(() => {
+                const btn = event.target;
+                btn.textContent = '✓ 已複製';
+                btn.classList.add('copied');
+                setTimeout(() => {
+                    btn.textContent = '複製';
+                    btn.classList.remove('copied');
+                }, 2000);
+            });
+        }
+
+        async function searchByBarcode() {
+            const barcode = document.getElementById('barcodeInput').value.trim();
+            if (!barcode) { alert('請輸入條碼'); return; }
+            
+            document.getElementById('emptyState').innerHTML = '<div class="empty-state-icon">⏳</div><p>搜尋中...</p>';
+            document.getElementById('emptyState').style.display = 'flex';
+            document.getElementById('versionsPanel').classList.remove('active');
+            document.getElementById('resultContainer').classList.remove('active');
+            document.getElementById('yahooRecommendBox').style.display = 'none';
+            
+            document.getElementById('listingInfoBox').style.display = 'none';
+
+            try {
+                let url = DISCOGS_API + '/database/search?barcode=' + encodeURIComponent(barcode);
+                if (discogsToken) url += '&token=' + discogsToken;
+                const response = await fetch(url, { headers: { 'User-Agent': 'VinylScanner/1.0' } });
+                if (!response.ok) throw new Error('API 錯誤');
+                const data = await response.json();
+                if (!data.results || data.results.length === 0) throw new Error('找不到條碼');
+
+                let cdVersions = [];
+                for (let result of data.results.slice(0, 10)) {
+                    let detailUrl = result.resource_url;
+                    if (discogsToken) detailUrl += '?token=' + discogsToken;
+                    const detailResponse = await fetch(detailUrl, { headers: { 'User-Agent': 'VinylScanner/1.0' } });
+                    if (detailResponse.ok) {
+                        const detailData = await detailResponse.json();
+                        if (detailData.formats?.some(f => f.name?.includes('CD'))) {
+                            cdVersions.push({ data: detailData, result: result });
+                            if (cdVersions.length >= 5) break;
+                        }
+                    }
+                }
+                if (cdVersions.length === 0) throw new Error('找不到 CD 版本');
+                allVersions = cdVersions;
+                if (allVersions.length === 1) {
+                    selectVersion(0);
+                } else {
+                    showVersions();
+                }
+            } catch (err) {
+                document.getElementById('emptyState').innerHTML = '<div class="empty-state-icon">🎵</div><p>' + err.message + '</p>';
+            }
+        }
+
+        async function searchByCatalog() {
+            const catalog = document.getElementById('catalogInput').value.trim();
+            if (!catalog) { alert('請輸入 Catalog Number'); return; }
+            
+            document.getElementById('emptyState').innerHTML = '<div class="empty-state-icon">⏳</div><p>搜尋中...</p>';
+            document.getElementById('emptyState').style.display = 'flex';
+            document.getElementById('versionsPanel').classList.remove('active');
+            document.getElementById('resultContainer').classList.remove('active');
+
+            try {
+                let url = DISCOGS_API + '/database/search?catno=' + encodeURIComponent(catalog);
+                if (discogsToken) url += '&token=' + discogsToken;
+                const response = await fetch(url, { headers: { 'User-Agent': 'VinylScanner/1.0' } });
+                if (!response.ok) throw new Error('API 錯誤');
+                const data = await response.json();
+                if (!data.results || data.results.length === 0) throw new Error('找不到該編碼');
+
+                let cdVersions = [];
+                for (let result of data.results.slice(0, 10)) {
+                    let detailUrl = result.resource_url;
+                    if (discogsToken) detailUrl += '?token=' + discogsToken;
+                    const detailResponse = await fetch(detailUrl, { headers: { 'User-Agent': 'VinylScanner/1.0' } });
+                    if (detailResponse.ok) {
+                        const detailData = await detailResponse.json();
+                        if (detailData.formats?.some(f => f.name?.includes('CD'))) {
+                            cdVersions.push({ data: detailData, result: result });
+                            if (cdVersions.length >= 8) break;
+                        }
+                    }
+                }
+                if (cdVersions.length === 0) throw new Error('找不到 CD 版本');
+                cdVersions.sort((a, b) => {
+                    const countryA = a.data.country || '';
+                    const countryB = b.data.country || '';
+                    if (countryA === 'Taiwan') return -1;
+                    if (countryB === 'Taiwan') return 1;
+                    return 0;
+                });
+                allVersions = cdVersions;
+                if (allVersions.length === 1) {
+                    selectVersion(0);
+                } else {
+                    showVersions();
+                }
+            } catch (err) {
+                document.getElementById('emptyState').innerHTML = '<div class="empty-state-icon">🎵</div><p>' + err.message + '</p>';
+            }
+        }
+
+        function showVersions() {
+            const list = document.getElementById('versionsList');
+            list.innerHTML = '';
+            allVersions.forEach((v, idx) => {
+                const card = document.createElement('div');
+                card.className = 'version-card';
+                const cdPlaceholder = '<svg width="60" height="60" viewBox="0 0 60 60" style="margin-right: 12px;"><circle cx="30" cy="30" r="28" fill="#2a2a2a" stroke="#ec4899" stroke-width="2"/><circle cx="30" cy="30" r="18" fill="#1a1a1a"/><circle cx="30" cy="30" r="8" fill="#ec4899"/><circle cx="30" cy="30" r="4" fill="#1a1a1a"/></svg>';
+                const coverImg = v.data.images?.[0]?.uri ? '<img src="' + v.data.images[0].uri + '" style="width: 60px; height: 60px; border-radius: 6px; object-fit: cover; margin-right: 12px;">' : cdPlaceholder;
+                const cardContent = '<div style="display: flex; align-items: center;">' + coverImg + '<div><div class="version-name">' + v.data.title + '</div><div class="version-info">年份: ' + (v.data.year || '-') + ' | 地區: ' + (v.data.country || '-') + '</div></div></div>';
+                card.innerHTML = cardContent;
+                card.onclick = () => selectVersion(idx);
+                list.appendChild(card);
+            });
+            document.getElementById('emptyState').style.display = 'none';
+            document.getElementById('versionsPanel').classList.add('active');
+        }
+
+        function selectVersion(idx) {
+            document.getElementById('emptyState').style.display = 'none';
+            displayAlbum(allVersions[idx].data);
+        }
+
+        function backToVersions() {
+            if (allVersions.length > 1) {
+                document.getElementById('versionsPanel').classList.add('active');
+                document.getElementById('resultContainer').classList.remove('active');
+                document.getElementById('backBtn').style.display = 'none';
+            }
+        }
+
+        async function displayAlbum(albumData) {
+            document.getElementById('albumTitle').textContent = albumData.title;
+            const isClassicalHeader = albumData.genres?.some(g => g.toLowerCase().includes('classical'));
+            if (isClassicalHeader) {
+                // 古典樂：從 extraartists + artists 找關鍵角色顯示
+                const keyRoles = ['Composed By', 'Conductor', 'Orchestra', 'Piano', 'Violin', 'Cello', 'Soloist', 'Performer'];
+                const allArtistsHeader = [...(albumData.artists || []), ...(albumData.extraartists || [])];
+                const keyNames = [];
+                allArtistsHeader.forEach(a => {
+                    if (a.role && keyRoles.some(r => a.role === r || a.role.startsWith(r + ' ') || a.role.startsWith(r + '['))) {
+                        if (!keyNames.includes(a.name)) keyNames.push(a.name);
+                    }
+                });
+                if (keyNames.length > 0) {
+                    document.getElementById('albumArtist').textContent = keyNames.join(', ');
+                } else {
+                    const fullArtist = albumData.artists?.map(a => a.name).join(', ') || '未知';
+                    document.getElementById('albumArtist').textContent = fullArtist;
+                }
+            } else {
+                document.getElementById('albumArtist').textContent = albumData.artists?.map(a => a.name).join(', ') || '未知';
+            }
+            if (albumData.images?.length > 0) {
+                document.getElementById('albumCover').src = albumData.images[0].uri;
+            }
+            document.getElementById('titleInput').value = storeName ? storeName + ' ' : '';
+            updateTitleCounter();
+            document.getElementById('keywordsGrid').innerHTML = '';
+            document.getElementById('keywordsSection').classList.add('hidden');
+            document.getElementById('infoSection').classList.remove('hidden');
+            document.body.style.cursor = 'wait';
+            document.getElementById('infoContent').innerHTML = '';
+            displayInfoContent(albumData);
+            await extractKeywords(albumData);
+            document.getElementById('versionsPanel').classList.remove('active');
+            document.getElementById('resultContainer').classList.add('active');
+            if (allVersions.length > 1) document.getElementById('backBtn').style.display = 'block';
+        }
+
+        async function callClaudeAPI(prompt) {
+            const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + openrouterKey
+                },
+                body: JSON.stringify({
+                    model: 'anthropic/claude-haiku-4.5',
+                    max_tokens: 1000,
+                    messages: [{ role: 'user', content: prompt }]
+                })
+            });
+            if (!response.ok) throw new Error('OpenRouter API 回應錯誤: ' + response.status);
+            const data = await response.json();
+            return data.choices?.[0]?.message?.content || '';
+        }
+
+        async function extractKeywords(albumData) {
+            // 只使用 Claude Haiku
+            const providers = ['claude'];
+
+            if (providers.length === 0) {
+                recommendYahooCategory(albumData);
+                
+            document.getElementById('listingInfoBox').style.display = 'none';
+                document.getElementById('loadingIndicator').classList.add('hidden');
+                return;
+            }
+
+            const isClassicalAlbum = albumData.genres?.some(g => g.toLowerCase().includes('classical')) || albumData.styles?.some(s => s.toLowerCase().includes('classical'));
+
+            const prompt = `從唱片資訊中提取關鍵字，並提供上架建議。
+
+唱片資訊：
+標題: ${albumData.title}
+藝人: ${albumData.artists?.map(a => a.name).join(', ') || ''}
+廠牌: ${albumData.labels?.map(l => l.name).join(', ') || ''}
+流派: ${albumData.genres?.join(', ') || ''}
+風格: ${albumData.styles?.join(', ') || ''}
+年份: ${albumData.year || ''}
+${albumData.extraartists?.length ? '額外藝人: ' + albumData.extraartists.map(a => a.name + (a.role ? '(' + a.role + ')' : '')).join(', ') : ''}
+
+請返回以下 JSON 格式：
+{
+  "keywords": [
+    {"zh": "蕭邦", "en": "Chopin", "role": "作曲家"},
+    {"zh": "Dangerous", "en": "Dangerous"},
+    {"zh": "Epic 唱片", "en": "Epic Records"}
+  ],
+  ${isClassicalAlbum ? `"roles": [
+    {"role": "作曲家", "names": ["Chopin", "Fauré"]},
+    {"role": "指揮", "names": ["Louis Frémaux"]},
+    {"role": "鋼琴", "names": ["John Ogdon"]}
+  ],` : ''}
+  "price": "NT$200-350",
+  "listing_tips": "一句話說明這張唱片的上架賣點",
+  "yahoo_category": "古典音樂 > 交響曲"
+}
+
+Yahoo分類要求（只選以下其中一個，回傳時只填後段路徑，不含「圖書/影音/文具 > 音樂與影片 > CD > 」前綴）：
+電影原聲
+華語流行 > 合輯
+華語流行 > 女(姓氏1~8劃) > 王菲
+華語流行 > 女(姓氏1~8劃) > 李心潔
+華語流行 > 女(姓氏1~8劃) > 李玟
+華語流行 > 女(姓氏1~8劃) > 辛曉琪
+華語流行 > 女(姓氏1~8劃) > 那英
+華語流行 > 女(姓氏1~8劃) > 周蕙
+華語流行 > 女(姓氏1~8劃) > 林憶蓮
+華語流行 > 女(姓氏1~8劃) > 林曉培
+華語流行 > 女(姓氏1~8劃) > 其他1~8劃姓氏
+華語流行 > 女(姓氏1~8劃) > 王心凌
+華語流行 > 女(姓氏1~8劃) > 李翊君
+華語流行 > 女(姓氏1~8劃) > 林慧萍
+華語流行 > 女(姓氏1~8劃) > 孟庭葦
+華語流行 > 女(姓氏1~8劃) > 江美琪
+華語流行 > 女(9~14劃) > 柯以敏
+華語流行 > 女(9~14劃) > 孫燕姿
+華語流行 > 女(9~14劃) > 徐懷鈺
+華語流行 > 女(9~14劃) > 張清芳
+華語流行 > 女(9~14劃) > 張惠妹
+華語流行 > 女(9~14劃) > 梁詠琪
+華語流行 > 女(9~14劃) > 莫文蔚
+華語流行 > 女(9~14劃) > 許美靜
+華語流行 > 女(9~14劃) > 許茹芸
+華語流行 > 女(9~14劃) > 許慧欣
+華語流行 > 女(9~14劃) > 陳淑樺
+華語流行 > 女(9~14劃) > 陳慧琳
+華語流行 > 女(9~14劃) > 陶晶瑩
+華語流行 > 女(9~14劃) > 彭佳慧
+華語流行 > 女(9~14劃) > 順子
+華語流行 > 女(9~14劃) > 黃鶯鶯
+華語流行 > 女(9~14劃) > 萬芳
+華語流行 > 女(9~14劃) > 趙詠華
+華語流行 > 女(9~14劃) > 鳳飛飛
+華語流行 > 女(9~14劃) > 其他9~14劃姓氏
+華語流行 > 女(9~14劃) > 曾寶儀
+華語流行 > 女(9~14劃) > 范曉萱
+華語流行 > 女(9~14劃) > 陳綺貞
+華語流行 > 女(9~14劃) > 梁靜茹
+華語流行 > 女(9~14劃) > 徐若瑄
+華語流行 > 女(15劃以上) > 其他15劃以上姓氏
+華語流行 > 女(15劃以上) > 劉若英
+華語流行 > 女(15劃以上) > 潘越雲
+華語流行 > 女(15劃以上) > 蔡依林
+華語流行 > 女(15劃以上) > 蔡幸娟
+華語流行 > 女(15劃以上) > 蔡琴
+華語流行 > 女(15劃以上) > 鄭秀文
+華語流行 > 女(15劃以上) > 鄧麗君
+華語流行 > 女(15劃以上) > 蕭亞軒
+華語流行 > 女(15劃以上) > 蘇慧倫
+華語流行 > 女(15劃以上) > 藍心湄
+華語流行 > 男(姓氏1~8劃) > 王力宏
+華語流行 > 男(姓氏1~8劃) > 王傑
+華語流行 > 男(姓氏1~8劃) > 伍思凱
+華語流行 > 男(姓氏1~8劃) > 任賢齊
+華語流行 > 男(姓氏1~8劃) > 吳宗憲
+華語流行 > 男(姓氏1~8劃) > 巫啟賢
+華語流行 > 男(姓氏1~8劃) > 李宗盛
+華語流行 > 男(姓氏1~8劃) > 杜德偉
+華語流行 > 男(姓氏1~8劃) > 周杰倫
+華語流行 > 男(姓氏1~8劃) > 周華健
+華語流行 > 男(姓氏1~8劃) > 其他1~8劃姓氏
+華語流行 > 男(姓氏1~8劃) > 古巨基
+華語流行 > 男(姓氏1~8劃) > 光良
+華語流行 > 男(9~14劃) > 庾澄慶
+華語流行 > 男(9~14劃) > 張宇
+華語流行 > 男(9~14劃) > 張雨生
+華語流行 > 男(9~14劃) > 張信哲
+華語流行 > 男(9~14劃) > 張國榮
+華語流行 > 男(9~14劃) > 張震嶽
+華語流行 > 男(9~14劃) > 張學友
+華語流行 > 男(9~14劃) > 許志安
+華語流行 > 男(9~14劃) > 郭富城
+華語流行 > 男(9~14劃) > 陳小春
+華語流行 > 男(9~14劃) > 陳昇
+華語流行 > 男(9~14劃) > 陳曉東
+華語流行 > 男(9~14劃) > 陶吉吉
+華語流行 > 男(9~14劃) > 黃品源
+華語流行 > 男(9~14劃) > 趙傳
+華語流行 > 男(9~14劃) > 齊秦
+華語流行 > 男(9~14劃) > 其他9~14劃姓氏
+華語流行 > 男(9~14劃) > 游鴻明
+華語流行 > 男(9~14劃) > 陳奕迅
+華語流行 > 男(9~14劃) > 黃立行
+華語流行 > 男(9~14劃) > 黃大煒
+華語流行 > 男(15劃以上) > 其他15劃以上姓氏
+華語流行 > 男(15劃以上) > 劉德華
+華語流行 > 男(15劃以上) > 黎明
+華語流行 > 男(15劃以上) > 謝霆鋒
+華語流行 > 男(15劃以上) > 羅大佑
+華語流行 > 男(15劃以上) > 蘇永康
+華語流行 > 男(15劃以上) > 鄭中基
+華語流行 > 男(15劃以上) > 鄭伊健
+華語流行 > 團體 > TFBOYS
+華語流行 > 團體 > SpeXial
+華語流行 > 團體 > 魔幻力量
+華語流行 > 團體 > 其他團體
+華語流行 > 團體 > 5566
+華語流行 > 團體 > F4
+華語流行 > 團體 > S.H.E
+華語流行 > 團體 > 伍佰And ChinaBlue
+華語流行 > 團體 > 動力火車
+華語流行 > 團體 > 無印良品
+華語流行 > 團體 > 錦繡二重唱
+華語流行 > 團體 > 優客李林
+華語流行 > 團體 > 五月天
+華語流行 > 團體 > Energy
+華語流行 > 團體 > Beyond
+華語流行 > 團體 > 草蜢
+華語流行 > 團體 > 蘇打綠
+日本流行 > 合輯
+日本流行 > 女歌手
+日本流行 > 男歌手
+日本流行 > 團體 > AKB48
+日本流行 > 團體 > Mr.Children
+日本流行 > 團體 > EXILE
+日本流行 > 團體 > ONE OK ROCK
+日本流行 > 團體 > KAT-TUN
+日本流行 > 團體 > NEWS
+日本流行 > 團體 > Kis-My-Ft2
+日本流行 > 團體 > Bz
+日本流行 > 團體 > 其他團體
+日本流行 > 團體 > Kinki Kids
+日本流行 > 團體 > SMAP
+日本流行 > 團體 > V6
+日本流行 > 團體 > w-inds.
+日本流行 > 團體 > 早安少女組
+日本流行 > 團體 > 嵐
+日本流行 > 團體 > 恰克與飛鳥
+日本流行 > 團體 > 美夢成真
+日本流行 > 團體 > 彩虹樂團
+日本流行 > 團體 > Glay
+電視原聲
+電玩卡通原聲
+西洋流行與搖滾 > 女歌手 > Adele
+西洋流行與搖滾 > 女歌手 > Taylor Swift
+西洋流行與搖滾 > 女歌手 > Lady Gaga
+西洋流行與搖滾 > 女歌手 > Beyonce
+西洋流行與搖滾 > 女歌手 > Rihanna
+西洋流行與搖滾 > 女歌手 > Enya
+西洋流行與搖滾 > 女歌手 > Avril Lavigne
+西洋流行與搖滾 > 女歌手 > Celine Dion
+西洋流行與搖滾 > 女歌手 > Sarah Brightman
+西洋流行與搖滾 > 女歌手 > Christina Aguilera
+西洋流行與搖滾 > 女歌手 > Jennifer Lopez
+西洋流行與搖滾 > 女歌手 > Janet Jackson
+西洋流行與搖滾 > 女歌手 > Madonna
+西洋流行與搖滾 > 女歌手 > Mariah Carey
+西洋流行與搖滾 > 女歌手 > LeAnn Rimes
+西洋流行與搖滾 > 女歌手 > Whitney Houston
+西洋流行與搖滾 > 女歌手 > 其他女歌手
+西洋流行與搖滾 > 男歌手 > Justin Bieber
+西洋流行與搖滾 > 男歌手 > David Bowie
+西洋流行與搖滾 > 男歌手 > Bryan Adams
+西洋流行與搖滾 > 男歌手 > Elton John
+西洋流行與搖滾 > 男歌手 > Elvis Presley
+西洋流行與搖滾 > 男歌手 > George Michael
+西洋流行與搖滾 > 男歌手 > Michael Jackson
+西洋流行與搖滾 > 男歌手 > Phil Collins
+西洋流行與搖滾 > 男歌手 > Ricky Martin
+西洋流行與搖滾 > 男歌手 > Robbie Williams
+西洋流行與搖滾 > 男歌手 > Rod Stewart
+西洋流行與搖滾 > 男歌手 > Sting
+西洋流行與搖滾 > 男歌手 > Eminem
+西洋流行與搖滾 > 男歌手 > Michael Bolton
+西洋流行與搖滾 > 男歌手 > 其他男歌手
+西洋流行與搖滾 > 團體 > Coldplay
+西洋流行與搖滾 > 團體 > One Direction
+西洋流行與搖滾 > 團體 > Maroon 5
+西洋流行與搖滾 > 團體 > Fall Out Boy
+西洋流行與搖滾 > 團體 > Pink Floyd
+西洋流行與搖滾 > 團體 > Nirvana
+西洋流行與搖滾 > 團體 > Take That
+西洋流行與搖滾 > 團體 > Green Day
+西洋流行與搖滾 > 團體 > ABBA
+西洋流行與搖滾 > 團體 > AIR SUPPLY
+西洋流行與搖滾 > 團體 > All Saints
+西洋流行與搖滾 > 團體 > All-4-One
+西洋流行與搖滾 > 團體 > Backstreet Boys
+西洋流行與搖滾 > 團體 > BEATLES
+西洋流行與搖滾 > 團體 > BON JOVI
+西洋流行與搖滾 > 團體 > EAGLES
+西洋流行與搖滾 > 團體 > Westlife
+西洋流行與搖滾 > 團體 > Aerosmith
+西洋流行與搖滾 > 團體 > Linkin Park
+西洋流行與搖滾 > 團體 > NSYNC
+西洋流行與搖滾 > 團體 > 其他團體
+西洋流行與搖滾 > 合輯
+台語歌曲 > 女歌手
+台語歌曲 > 男歌手
+台語歌曲 > 團體/合輯
+華語民歌
+粵語流行 > 女歌手
+粵語流行 > 男歌手
+粵語流行 > 團體/合輯
+韓國歌曲 > 團體/合輯 > Super Junior
+韓國歌曲 > 團體/合輯 > 東方神起
+韓國歌曲 > 團體/合輯 > 少女時代
+韓國歌曲 > 團體/合輯 > EXO
+韓國歌曲 > 團體/合輯 > SHINee
+韓國歌曲 > 團體/合輯 > BIGBANG　
+韓國歌曲 > 團體/合輯 > JYJ　
+韓國歌曲 > 團體/合輯 > CNBlue
+韓國歌曲 > 團體/合輯 > INFINITE
+韓國歌曲 > 團體/合輯 > T-ara
+韓國歌曲 > 團體/合輯 > BEAST
+韓國歌曲 > 團體/合輯 > 神話
+韓國歌曲 > 團體/合輯 > 2PM
+韓國歌曲 > 團體/合輯 > KARA
+韓國歌曲 > 團體/合輯 > VIXX
+韓國歌曲 > 團體/合輯 > TEEN TOP　
+韓國歌曲 > 團體/合輯 > B1A4　
+韓國歌曲 > 團體/合輯 > B.A.P
+韓國歌曲 > 團體/合輯 > GOT7　
+韓國歌曲 > 團體/合輯 > Apink
+韓國歌曲 > 團體/合輯 > 2NE1
+韓國歌曲 > 團體/合輯 > Sistar
+韓國歌曲 > 團體/合輯 > BTS防彈少年團
+韓國歌曲 > 團體/合輯 > TWICE
+韓國歌曲 > 團體/合輯 > 其他團體/合輯
+韓國歌曲 > 女歌手
+韓國歌曲 > 男歌手
+嬉哈/繞舌
+舞曲/電子音樂
+節奏藍調R&B
+鄉村/民謠
+古典音樂 > 獨奏曲
+古典音樂 > 協奏曲
+古典音樂 > 室內樂(重奏)
+古典音樂 > 交響曲
+古典音樂 > 歌劇/聲樂
+古典音樂 > 圓舞曲/芭蕾舞曲
+古典音樂 > 音樂劇
+古典音樂 > 其他類型古典樂
+新世紀音樂 > 自然音樂
+新世紀音樂 > 樂器演奏
+新世紀音樂 > 男聲女聲
+新世紀音樂 > 其他
+世界民族音樂
+相聲/舞台劇
+傳統戲曲
+語言學習
+爵士樂
+重金屬
+輕音樂/功能音樂
+兒童音樂
+其他類型音樂
+
+關鍵字要求：
+- 前三項（藝人、專輪、廠牌）必須有
+- 每個項目都要有繁體中文和英文
+- 使用台灣繁體中文，優先使用台灣官方正式譯名
+- 人名或團體加上 role 字段
+- 非人名不需要 role 字段
+- 寧缺毋濫
+
+${isClassicalAlbum ? `角色分類要求：
+- 從藝人名單中判斷每個人的角色（作曲家、指揮、鋼琴、小提琴、大提琴、樂團等）
+- 只列出能確認角色的人，不確定的不要猜` : ''}
+
+售價要求：
+- 以台灣二手市場行情為準，單位 NT$
+- 給合理範圍，不要亂猜，不確定就給寬一點的範圍
+
+上架提示要求：
+- 一句話，說明這張唱片對買家的吸引力或特殊價值
+
+只返回 JSON，不要其他說明。`;
+
+            let success = false;
+            const maxRetries = 3;
+
+            for (let p = 0; p < providers.length; p++) {
+                const provider = providers[p];
+                for (let attempt = 1; attempt <= maxRetries; attempt++) {
+                    try {
+                        const timeoutPromise = new Promise((_, reject) => 
+                            setTimeout(() => reject(new Error('API超時')), 5000)
+                        );
+
+                        const apiCall = provider === 'claude' ? callClaudeAPI(prompt) : callQwenAPI(prompt);
+                        const result = await Promise.race([apiCall, timeoutPromise]);
+
+                        if (result) {
+                            const jsonMatch = result.match(/\{[\s\S]*\}/);
+                            if (jsonMatch) {
+                                const kw = JSON.parse(jsonMatch[0]);
+                                displayKeywords(kw.keywords || [], albumData.genres);
+                                generateAiTitle(kw.keywords || [], albumData.genres);
+
+                                // 角色分類（古典樂）
+                                if (kw.roles && kw.roles.length > 0) {
+                                    displayAiRoles(kw.roles);
+                                }
+
+                                // 售價 + 上架提示
+                                displayListingInfo(kw.price, kw.listing_tips);
+
+                                // Yahoo 分類推薦
+                                if (kw.yahoo_category) {
+                                    const fullPath = '圖書/影音/文具 > 音樂與影片 > CD > ' + kw.yahoo_category;
+                                    currentYahooCategoryPath = fullPath;
+                                    document.getElementById('yahooRecommendPath').textContent = `📂 Yahoo 拍賣分類推薦：${fullPath}`;
+                                    document.getElementById('yahooRecommendBox').style.display = '';
+                                }
+
+                                success = true;
+                                break;
+                            }
+                        }
+                    } catch (err) {
+                        console.log(`${provider} API 嘗試 ${attempt} 失敗:`, err.message);
+                        if (attempt < maxRetries) {
+                            console.log(`等待後重試...`);
+                            await new Promise(resolve => setTimeout(resolve, 300));
+                        }
+                    }
+                }
+                if (success) break;
+                if (p < providers.length - 1) {
+                    console.log(`${provider} API 3 次嘗試都失敗，自動切換備援引擎：${providers[p + 1]}`);
+                }
+            }
+
+            if (!success) {
+                console.log('所有 AI 引擎嘗試都失敗，降級顯示');
+            }
+            recommendYahooCategory(albumData);
+            document.body.style.cursor = 'auto';
+        }
+
+        function generateAiTitle(keywords, genres) {
+            if (!keywords || keywords.length === 0) {
+                document.getElementById('aiTitleBox').style.display = 'none';
+                return;
+            }
+
+            // 提取人名、專輪、廠牌（中英文）
+            let artistZh = '';
+            let artistEn = '';
+            let artistRole = '';
+            let album = '';
+            let label = '';
+
+            for (let kw of keywords) {
+                if (!artistZh && kw.role && (kw.role.includes('作曲家') || kw.role.includes('藝人') || kw.role.includes('歌手') || kw.role.includes('樂團') || kw.role.includes('指揮') || kw.role.includes('鋼琴'))) {
+                    artistZh = kw.zh || '';
+                    artistEn = kw.en || '';
+                    artistRole = kw.role || '';
+                } else if (!album && !kw.role) {
+                    album = kw.zh || kw.en || '';
+                } else if (!label && !kw.role && album && kw.zh !== album && kw.en !== album) {
+                    label = kw.en || kw.zh || ''; // 廠牌強制用英文
+                }
+            }
+
+            // 簡化人名（根據角色決定是否簡化為姓氏）
+            const artistSimplified = simplifyPersonName(artistZh, artistEn, artistRole, genres);
+            artistZh = artistSimplified.zh;
+            artistEn = artistSimplified.en;
+
+            // 簡化廠牌（去掉 Records/唱片等後綴）
+            if (label) {
+                label = label.replace(/Records|唱片|音樂|娛樂|Ltd|Inc/g, '').trim();
+                // 再取最後一段（如 "Epic Records" → "Epic"）
+                if (label.includes(' ')) {
+                    label = label.substring(label.lastIndexOf(' ') + 1);
+                }
+            }
+
+            // 組合邏輯：格式為 [店家] 人名(英文) / 專輪 廠牌
+            const fullStoreName = storeName;
+            const shortStoreName = storeNameShort;
+            const maxLen = 55;
+
+            function buildTitle(prefix, hasEnglish, withLabel) {
+                let parts = [];
+                
+                if (prefix) {
+                    parts.push(prefix);
+                }
+                
+                if (artistZh) {
+                    if (hasEnglish && artistEn) {
+                        parts.push(artistZh + '(' + artistEn + ')');
+                    } else {
+                        parts.push(artistZh);
+                    }
+                }
+                
+                parts.push('/');
+                
+                if (album) parts.push(album);
+                if (withLabel && label) parts.push(label);
+                
+                return parts.join(' ').replace(' / ', ' / ').replace(/  +/g, ' ').trim();
+            }
+
+            let title = '';
+
+            // 優先級 1：完整店家 + 人名(英文) / 專輪 廠牌
+            title = buildTitle(fullStoreName, true, true);
+            if (title.length <= maxLen) {
+                displayTitle(title);
+                return;
+            }
+
+            // 優先級 2：縮寫店家(如有) + 人名(英文) / 專輪 廠牌
+            if (shortStoreName) {
+                title = buildTitle(shortStoreName, true, true);
+                if (title.length <= maxLen) {
+                    displayTitle(title);
+                    return;
+                }
+
+                // 優先級 3：縮寫店家 + 人名 / 專輪 廠牌（砍英文）
+                title = buildTitle(shortStoreName, false, true);
+                if (title.length <= maxLen) {
+                    displayTitle(title);
+                    return;
+                }
+
+                // 優先級 4：縮寫店家 + 人名 / 專輪（砍廠牌）
+                title = buildTitle(shortStoreName, false, false);
+                if (title.length <= maxLen) {
+                    displayTitle(title);
+                    return;
+                }
+            }
+
+            // 如果沒有縮寫，繼續用完整店家嘗試砍掉部分
+            if (!shortStoreName) {
+                // 砍英文
+                title = buildTitle(fullStoreName, false, true);
+                if (title.length <= maxLen) {
+                    displayTitle(title);
+                    return;
+                }
+
+                // 砍廠牌
+                title = buildTitle(fullStoreName, false, false);
+                if (title.length <= maxLen) {
+                    displayTitle(title);
+                    return;
+                }
+            }
+
+            // 最後退路：優先用完整店名
+            if (fullStoreName && artistZh) {
+                title = fullStoreName + ' ' + artistZh;
+                displayTitle(title);
+                return;
+            }
+
+            if (shortStoreName && artistZh) {
+                title = shortStoreName + ' ' + artistZh;
+                displayTitle(title);
+                return;
+            }
+
+            document.getElementById('aiTitleBox').style.display = 'none';
+
+            function displayTitle(titleText) {
+                if (titleText.length > 0) {
+                    document.getElementById('aiTitleBox').style.display = '';
+                    document.getElementById('aiTitleText').textContent = titleText;
+                } else {
+                    document.getElementById('aiTitleBox').style.display = 'none';
+                }
+            }
+        }
+
+        function useAiTitle() {
+            const title = document.getElementById('aiTitleText').textContent.trim();
+            if (title) {
+                document.getElementById('titleInput').value = title;
+                document.getElementById('titleInput').dispatchEvent(new Event('input'));
+            }
+        }
+
+        function simplifyPersonName(zhName, enName, role, genres) {
+            let simplifiedZh = zhName;
+            let simplifiedEn = enName;
+
+            // 只有古典樂的作曲家才取姓氏
+            const isClassical = genres && genres.some(g => g.toLowerCase().includes('classical'));
+            const isComposer = role && (role === '作曲家' || role === 'Composer' || role === 'Composed By');
+            const shouldSimplify = isClassical && isComposer;
+
+            if (shouldSimplify) {
+                // 中文：取最後一個「·」後面的部分
+                if (zhName && zhName.includes('·')) {
+                    simplifiedZh = zhName.substring(zhName.lastIndexOf('·') + 1);
+                }
+                // 英文：取最後一個空格後面的單字
+                if (enName && enName.includes(' ')) {
+                    simplifiedEn = enName.substring(enName.lastIndexOf(' ') + 1);
+                }
+            }
+
+            return { zh: simplifiedZh, en: simplifiedEn };
+        }
+
+        function displayAiRoles(roles) {
+            const container = document.getElementById('aiRolesPlaceholder');
+            if (!container) return;
+            if (!roles || roles.length === 0) { container.innerHTML = ''; return; }
+            let html = '';
+            roles.forEach(r => {
+                if (!r.names || r.names.length === 0) return;
+                html += '<div class="info-block"><div class="info-block-title">' + r.role + '</div><div class="info-block-content">' + r.names.join(', ') + '</div></div>';
+            });
+            container.innerHTML = html;
+        }
+
+        function displayListingInfo(price, tips) {
+            const box = document.getElementById('listingInfoBox');
+            if (!box) return;
+            let html = '';
+            if (price) html += `<div style="font-size:13px; color:#f59e0b; font-weight:600; margin-bottom:6px;">💰 建議售價：${price}</div>`;
+            if (tips) html += `<div style="font-size:12px; color:#ccc; line-height:1.6;">📋 上架提示：${tips}</div>`;
+            if (html) { box.innerHTML = html; box.style.display = ''; }
+            else box.style.display = 'none';
+        }
+
+        async function recommendYahooCategory(albumData) {
+            // Yahoo分類已整合進主prompt一次回傳
+        }
+
+        function loadYahooCategories() {
+            yahooCategories = {};
+            console.log('✅ Yahoo 分類數據已載入');
+        }
+
+        function flashCopied(btn, originalText) {
+            btn.textContent = '✓ 已複製';
+            const origBg = btn.style.background || '';
+            btn.style.background = '#10b981';
+            setTimeout(() => {
+                btn.textContent = originalText;
+                btn.style.background = origBg;
+            }, 1500);
+        }
+
+        function copyYahooPath() {
+            if (currentYahooCategoryPath) {
+                navigator.clipboard.writeText(currentYahooCategoryPath).then(() => {
+                    const btn = document.querySelector('[onclick="copyYahooPath()"]');
+                    if (btn) flashCopied(btn, '複製路徑');
+                }).catch(() => {});
+            }
+        }
+
+        function displayKeywords(keywords, genres) {
+            const grid = document.getElementById('keywordsGrid');
+            grid.innerHTML = '';
+            
+            // AI 生成按鈕 - 保持原樣不動
+            if (keywords.length > 0) {
+                keywords.forEach(kw => {
+                    let displayZh = kw.zh;
+                    let displayEn = kw.en;
+                    
+                    if (kw.role) {
+                        const simplified = simplifyPersonName(kw.zh, kw.en, kw.role, genres);
+                        displayZh = simplified.zh;
+                        displayEn = simplified.en;
+                    }
+                    
+                    const zhBtn = document.createElement('button');
+                    zhBtn.className = 'keyword-button';
+                    zhBtn.textContent = displayZh;
+                    zhBtn.onclick = () => addKeywordToTitle(displayZh);
+                    zhBtn.oncontextmenu = (e) => {
+                        e.preventDefault();
+                        navigator.clipboard.writeText(displayZh).catch(() => {});
+                    };
+                    if (kw.role) zhBtn.title = kw.role;
+                    grid.appendChild(zhBtn);
+
+                    const enBtn = document.createElement('button');
+                    enBtn.className = 'keyword-button';
+                    enBtn.textContent = displayEn;
+                    enBtn.onclick = () => addKeywordToTitle(displayEn);
+                    enBtn.oncontextmenu = (e) => {
+                        e.preventDefault();
+                        navigator.clipboard.writeText(displayEn).catch(() => {});
+                    };
+                    if (kw.role) enBtn.title = kw.role;
+                    grid.appendChild(enBtn);
+                });
+            }
+
+            // 自定義按鈕 - 從新的一行開始
+            if (customKeywordButtons.length > 0) {
+                const separator = document.createElement('div');
+                separator.className = 'custom-keyword-separator';
+                separator.style.gridColumn = '1 / -1';
+                separator.style.height = '0';
+                grid.appendChild(separator);
+
+                customKeywordButtons.forEach(btn => {
+                    const customBtn = document.createElement('button');
+                    customBtn.className = 'keyword-button custom-keyword-button';
+                    customBtn.textContent = btn;
+                    customBtn.onclick = () => addKeywordToTitle(btn);
+                    customBtn.style.background = '#1a2a2a';
+                    customBtn.style.borderColor = '#2a3a3a';
+                    grid.appendChild(customBtn);
+                });
+            }
+
+            document.getElementById('keywordsSection').classList.remove('hidden');
+        }
+
+        function addKeywordToTitle(keyword) {
+            const titleInput = document.getElementById('titleInput');
+            const currentValue = titleInput.value;
+            const beforeCursor = currentValue.substring(0, titleInput.selectionStart || currentValue.length);
+            const afterCursor = currentValue.substring(titleInput.selectionStart || currentValue.length);
+            const spaceBefore = beforeCursor && !beforeCursor.endsWith(' ') ? ' ' : '';
+            const spaceAfter = afterCursor && !afterCursor.startsWith(' ') ? ' ' : '';
+            const newText = beforeCursor + spaceBefore + keyword + spaceAfter + afterCursor;
+            
+            titleInput.value = newText;
+            updateTitleCounter();
+            titleInput.focus();
+        }
+
+        function openQuickButtonModal() {
+            document.getElementById('quickButtonModal').classList.add('active');
+            document.getElementById('newButtonText').focus();
+            refreshCustomButtonsList();
+        }
+
+        function closeQuickButtonModal() {
+            document.getElementById('quickButtonModal').classList.remove('active');
+            document.getElementById('newButtonText').value = '';
+            
+            // 如果关键字区正显示，立刻更新自定义按钮
+            const keywordSection = document.getElementById('keywordsSection');
+            if (!keywordSection.classList.contains('hidden')) {
+                updateCustomButtonsDisplay();
+            }
+        }
+
+        function updateCustomButtonsDisplay() {
+            const grid = document.getElementById('keywordsGrid');
+            
+            // 移除旧的自定义按钮和分隔符
+            grid.querySelectorAll('.custom-keyword-button, .custom-keyword-separator').forEach(btn => btn.remove());
+            
+            // 重新加入自定义按钮
+            if (customKeywordButtons.length > 0) {
+                const separator = document.createElement('div');
+                separator.className = 'custom-keyword-separator';
+                separator.style.gridColumn = '1 / -1';
+                separator.style.height = '0';
+                grid.appendChild(separator);
+
+                customKeywordButtons.forEach(btn => {
+                    const customBtn = document.createElement('button');
+                    customBtn.className = 'keyword-button custom-keyword-button';
+                    customBtn.textContent = btn;
+                    customBtn.onclick = () => addKeywordToTitle(btn);
+                    customBtn.style.background = '#1a2a2a';
+                    customBtn.style.borderColor = '#2a3a3a';
+                    grid.appendChild(customBtn);
+                });
+            }
+        }
+
+        function addCustomButton() {
+            const input = document.getElementById('newButtonText').value.trim();
+            if (!input) { alert('❌ 按鈕文本不能為空！'); return; }
+            if (input.length > 10) { alert('❌ 按鈕文本過長（建議5字以內）'); return; }
+            if (customKeywordButtons.includes(input)) { alert('❌ 此按鈕已存在！'); return; }
+            
+            customKeywordButtons.push(input);
+            localStorage.setItem('customKeywordButtons', JSON.stringify(customKeywordButtons));
+            document.getElementById('newButtonText').value = '';
+            refreshCustomButtonsList();
+        }
+
+        function editCustomButton(index) {
+            const oldText = customKeywordButtons[index];
+            const newText = prompt('編輯按鈕文本：', oldText);
+            if (newText !== null && newText.trim()) {
+                customKeywordButtons[index] = newText.trim();
+                localStorage.setItem('customKeywordButtons', JSON.stringify(customKeywordButtons));
+                refreshCustomButtonsList();
+            }
+        }
+
+        function deleteCustomButton(index) {
+            if (confirm('確定刪除此按鈕？')) {
+                customKeywordButtons.splice(index, 1);
+                localStorage.setItem('customKeywordButtons', JSON.stringify(customKeywordButtons));
+                refreshCustomButtonsList();
+            }
+        }
+
+        function moveCustomButton(index, direction) {
+            if (direction === 'up' && index > 0) {
+                [customKeywordButtons[index], customKeywordButtons[index - 1]] = 
+                [customKeywordButtons[index - 1], customKeywordButtons[index]];
+            } else if (direction === 'down' && index < customKeywordButtons.length - 1) {
+                [customKeywordButtons[index], customKeywordButtons[index + 1]] = 
+                [customKeywordButtons[index + 1], customKeywordButtons[index]];
+            }
+            localStorage.setItem('customKeywordButtons', JSON.stringify(customKeywordButtons));
+            refreshCustomButtonsList();
+        }
+
+        function refreshCustomButtonsList() {
+            const listDiv = document.getElementById('customButtonsList');
+            if (customKeywordButtons.length === 0) {
+                listDiv.innerHTML = '<div style="text-align: center; color: #666; padding: 20px;">還沒有自定義按鈕</div>';
+                return;
+            }
+
+            listDiv.innerHTML = customKeywordButtons.map((btn, idx) => `
+                <div style="display: flex; align-items: center; gap: 8px; padding: 8px; margin-bottom: 8px; background: #2a2a2a; border-radius: 6px;">
+                    <div style="flex: 1; font-size: 13px; color: #e5e5e5;">${btn}</div>
+                    <button class="product-desc-button" onclick="moveCustomButton(${idx}, 'up')" ${idx === 0 ? 'disabled' : ''} style="${idx === 0 ? 'opacity: 0.3; cursor: not-allowed;' : ''}">↑</button>
+                    <button class="product-desc-button" onclick="moveCustomButton(${idx}, 'down')" ${idx === customKeywordButtons.length - 1 ? 'disabled' : ''} style="${idx === customKeywordButtons.length - 1 ? 'opacity: 0.3; cursor: not-allowed;' : ''}">↓</button>
+                    <button class="product-desc-button" onclick="editCustomButton(${idx})">✏️</button>
+                    <button class="product-desc-button" onclick="deleteCustomButton(${idx})">🗑️</button>
+                </div>
+            `).join('');
+        }
+
+        function updateTitleCounter() {
+            const titleInput = document.getElementById('titleInput');
+            const count = titleInput.value.length;
+            const charCountEl = document.getElementById('charCount');
+            const counterEl = charCountEl.parentElement;
+            
+            if (count > 60) {
+                charCountEl.textContent = count + '/60 超過 ' + (count - 60) + ' 字';
+                counterEl.classList.remove('warning');
+                counterEl.classList.add('over-limit');
+            } else if (count >= 50) {
+                charCountEl.textContent = count;
+                counterEl.classList.add('warning');
+                counterEl.classList.remove('over-limit');
+            } else {
+                charCountEl.textContent = count;
+                counterEl.classList.remove('warning');
+                counterEl.classList.remove('over-limit');
+            }
+        }
+
+        function copyTitle() {
+            const titleText = document.getElementById('titleInput').value;
+            if (!titleText) { alert('標題為空！'); return; }
+            const btn = event.target;
+            navigator.clipboard.writeText(titleText).then(() => {
+                flashCopied(btn, '複製');
+            });
+        }
+
+        let lastTracksList = '';
+
+        function copyTrackslistText() {
+            if (!lastTracksList) { alert('沒有曲目清單'); return; }
+            const btn = event.target;
+            navigator.clipboard.writeText(lastTracksList).then(() => {
+                flashCopied(btn, '複製');
+            });
+        }
+
+        function displayInfoContent(albumData) {
+            const infoContent = document.getElementById('infoContent');
+            let html = '';
+            
+            // 加入 Discogs 按鈕 header
+            const discogsUrl = 'https://www.discogs.com/release/' + albumData.id;
+            html += '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #2a2a2a;">';
+            html += '<div style="flex: 1;"><div style="font-size: 13px; font-weight: 600; color: #ec4899;">Discogs 資訊</div></div>';
+            html += '<a href="' + discogsUrl + '" target="_blank" style="padding: 6px 12px; background: #ec4899; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600; text-decoration: none; display: inline-block;">前往 DISCOGS</a>';
+            html += '</div>';
+            
+            if (albumData.artists && albumData.artists.length > 0) {
+                const isClassicalInfo = albumData.genres?.some(g => g.toLowerCase().includes('classical'));
+                if (!isClassicalInfo) {
+                    html += '<div class="info-block"><div class="info-block-title">藝人</div><div class="info-block-content">' + albumData.artists.map(a => a.name).join(', ') + '</div></div>';
+                } else {
+                    const validRoles = ['Composed By','Conductor','Orchestra','Choir','Chorus','Chorus Master','Concert Master','Soloist','Performer','Piano','Violin','Cello','Viola','Double Bass','Flute','Oboe','Clarinet','Bassoon','Horn','Trumpet','Trombone','Tuba','Harp','Harpsichord','Organ','Percussion','Timpani','Soprano','Mezzo-soprano','Alto','Tenor','Baritone','Bass','Narrator'];
+                    const allA = [...(albumData.artists || []), ...(albumData.extraartists || [])];
+                    const hasRoles = allA.some(a => a.role && validRoles.some(r => a.role === r || a.role.startsWith(r + ' ') || a.role.startsWith(r + '[')));
+                    if (!hasRoles) {
+                        html += '<div class="info-block"><div class="info-block-title">藝人</div><div class="info-block-content">' + albumData.artists.map(a => a.name).join(', ') + '</div></div>';
+                    }
+                }
+            }
+
+            html += '<div class="info-block"><div class="info-block-title">專輯名稱</div><div class="info-block-content">' + albumData.title + '</div></div>';
+            html += '<div id="aiRolesPlaceholder"></div>';
+            if (albumData.labels && albumData.labels.length > 0) {
+                html += '<div class="info-block"><div class="info-block-title">唱片廠牌</div><div class="info-block-content">' + albumData.labels.map(l => l.name).join(', ') + '</div></div>';
+                const catalogNumbers = albumData.labels.map(l => l.catno).filter(c => c && c !== '-');
+                if (catalogNumbers.length > 0) {
+                    html += '<div class="info-block"><div class="info-block-title">目錄編號</div><div class="info-block-content">' + catalogNumbers.join(', ') + '</div></div>';
+                }
+            }
+            if (albumData.year) html += '<div class="info-block"><div class="info-block-title">發行年份</div><div class="info-block-content">' + albumData.year + '</div></div>';
+            if (albumData.country) html += '<div class="info-block"><div class="info-block-title">發行地區</div><div class="info-block-content">' + albumData.country + '</div></div>';
+            if (albumData.formats && albumData.formats.length > 0) html += '<div class="info-block"><div class="info-block-title">格式</div><div class="info-block-content">' + albumData.formats.map(f => f.name).join(', ') + '</div></div>';
+            const matrixCode = albumData.identifiers?.find(id => id.type === 'Matrix / Runout')?.value;
+            if (matrixCode) html += '<div class="info-block"><div class="info-block-title">Matrix Code</div><div class="info-block-content">' + matrixCode + '</div></div>';
+            const sidCode = albumData.identifiers?.find(id => id.type === 'SID Code')?.value;
+            if (sidCode) html += '<div class="info-block"><div class="info-block-title">SID Code</div><div class="info-block-content">' + sidCode + '</div></div>';
+            if (albumData.tracklist && albumData.tracklist.length > 0) {
+                const tracksList = albumData.tracklist.map(t => t.position + ' ' + t.title + (t.duration ? ' (' + t.duration + ')' : '')).join('\n');
+                lastTracksList = tracksList;
+                const tracksHtml = albumData.tracklist.map(t => t.position + ' ' + t.title + (t.duration ? ' (' + t.duration + ')' : '')).join('<br>');
+                html += '<div class="info-block"><div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;"><div class="info-block-title">曲目清單</div><button onclick="copyTrackslistText()" style="padding: 4px 8px; background: #ec4899; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600;">複製</button></div><div class="info-block-content">' + tracksHtml + '</div></div>';
+            }
+            infoContent.innerHTML = html;
+        }
+    </script>
+        <!-- 諮詢 Modal -->
+</body>
+</html>
